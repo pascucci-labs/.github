@@ -1,0 +1,16 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "timezone": "America/Vancouver",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "rangeStrategy": "bump",
+  "automerge": false,
+  "dependencyDashboard": true,
+  "vulnerabilityAlerts": {"enabled": true, "schedule": ["at any time"], "prPriority": 10, "automerge": false},
+  "packageRules": [
+    {"matchUpdateTypes": ["minor", "patch", "pin", "digest"], "groupName": "compatible nonmajor updates"},
+    {"matchUpdateTypes": ["major"], "groupName": null, "automerge": false}
+  ]
+}

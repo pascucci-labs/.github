@@ -1,0 +1,3 @@
+[extend]
+useDefault = true
+# No central allowlist. Secrets cannot be hidden by the debt baseline.

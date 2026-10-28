@@ -1,0 +1,6 @@
+__pycache__/
+.quality-platform/
+.quality-results/
+repository-plan*.json
+*-plan.json
+organization-report/

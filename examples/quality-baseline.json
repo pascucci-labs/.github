@@ -1,0 +1,5 @@
+{
+  "findings": [
+    {"id": "replace-with-reviewed-finding-id", "reason": "Tracked debt; link the remediation issue here", "expires": "2026-11-30"}
+  ]
+}
