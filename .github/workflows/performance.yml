@@ -69,5 +69,6 @@ jobs:
         with:
           name: performance-results
           path: .quality-results/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 7

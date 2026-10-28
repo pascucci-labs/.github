@@ -1,6 +1,6 @@
 # Local validation evidence — 2026-10-28
 
-- 19 focused unit tests pass, including monorepo/framework detection, symlinks,
+- 20 focused unit tests pass, including monorepo/framework detection, symlinks,
   CVSS severity, unwaivable secrets/critical findings, expiry, missing-tool
   reporting, stale plans, pagination, idempotency and incomplete scan safety.
 - All central reusable and validation workflows pass Actionlint locally.
@@ -11,9 +11,15 @@
   and secret values were withheld; no real credential was used.
 - Python syntax and Ruff E9/F checks pass.
 
-These checks do not establish live GitHub activation. The central revision is
-not published, Renovate is not installed, no settings or credentials were added,
-and no adoption PRs or tracking issues were created. Trivy/OSV database access,
+The central draft PR is https://github.com/pascucci-labs/.github/pull/4 and the
+pilot draft is https://github.com/pascucci-labs/spec-engine/pull/230. The first
+central Actions validation passed, and the pilot successfully invoked the
+published reusable workflows. Source security scanning passed. The dependency
+job produced blocking findings, and exposed that upload-artifact excludes hidden
+report directories by default. Uploads now explicitly include the dedicated
+sanitary report directory; raw scanner files remain outside that directory.
+Neither PR is merged. Renovate is not installed, and no settings/credentials,
+tracking issues, other repository adoption or deployments were created. Trivy/OSV database access,
 Linux binary downloads, cross-repository reusable-workflow calls, full history
 scan triage, private reporting access and the optional performance fixtures
 still need the live pilot. Do not expand rollout before that evidence exists.

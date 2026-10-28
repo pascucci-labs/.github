@@ -302,6 +302,11 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(report["status"], "incomplete")
             self.assertTrue(report["manual"])
 
+    def test_hidden_result_directory_is_explicitly_uploaded(self):
+        for name in ('quality', 'security', 'dependency-audit', 'performance'):
+            text = (ROOT / '.github/workflows' / f'{name}.yml').read_text()
+            self.assertIn('path: .quality-results/\n          include-hidden-files: true', text)
+
     def test_every_external_action_is_sha_pinned_and_no_unsafe_trigger(self):
         import re
 
