@@ -11,7 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from common import PLATFORM, configuration, safe_path, load_script
 
@@ -63,9 +63,11 @@ def osv_severity(vuln):
                 if changed
                 else 6.42 * impact_base
             )
-            privilege = {"N": 0.85, "L": 0.68 if changed else 0.62, "H": 0.50 if changed else 0.27}[
-                m["PR"]
-            ]
+            privilege = {
+                "N": 0.85,
+                "L": 0.68 if changed else 0.62,
+                "H": 0.50 if changed else 0.27,
+            }[m["PR"]]
             exploit = (
                 8.22
                 * {"N": 0.85, "A": 0.62, "L": 0.55, "P": 0.2}[m["AV"]]
@@ -91,20 +93,24 @@ def normalize(tool, data):
     found = []
     if tool == "gitleaks":
         for item in data:
-            found.append(
-                finding(
-                    tool,
-                    item["RuleID"],
-                    item["File"],
-                    item.get("StartLine", 1),
-                    "HIGH",
-                    True,
-                    identity="gitleaks|"
-                    + item.get(
-                        "Fingerprint", f"{item['RuleID']}:{item['File']}:{item.get('StartLine', 1)}"
-                    ),
-                )
+            record = finding(
+                tool,
+                item["RuleID"],
+                item["File"],
+                item.get("StartLine", 1),
+                "HIGH",
+                True,
+                identity="gitleaks|"
+                + item.get(
+                    "Fingerprint",
+                    f"{item['RuleID']}:{item['File']}:{item.get('StartLine', 1)}",
+                ),
             )
+            # History findings must point to their original commit, even if the
+            # current file was moved/deleted. Neither field contains a secret.
+            record["commit"] = item.get("Commit", "")
+            record["fingerprint"] = item.get("Fingerprint", "")
+            found.append(record)
     elif tool == "semgrep":
         for item in data.get("results", []):
             meta = item["extra"].get("metadata", {})
@@ -140,7 +146,12 @@ def normalize(tool, data):
                 cause = item.get("CauseMetadata", {})
                 found.append(
                     finding(
-                        tool, item["ID"], path, cause.get("StartLine", 1), item["Severity"], True
+                        tool,
+                        item["ID"],
+                        path,
+                        cause.get("StartLine", 1),
+                        item["Severity"],
+                        True,
                     )
                 )
     elif tool == "osv-scanner":
@@ -216,12 +227,82 @@ def run_scanner(tool, argv, output, allowed):
     return normalize(tool, data)
 
 
+def validate_gitleaks_ignore(text):
+    """Accept exact, explained historical fingerprints, never path/rule wildcards."""
+    fingerprints = []
+    reason = ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith("#"):
+            reason = line[1:].strip()
+            continue
+        match = re.fullmatch(r"([0-9a-f]{40}):([^\r\n]+):([A-Za-z0-9_-]+):([1-9][0-9]*)", line)
+        if not match or any(character in line for character in "*?[]") or len(reason) < 12:
+            raise ValueError(
+                "Gitleaks exceptions require exact fingerprints and explanatory comments"
+            )
+        path = PurePosixPath(match.group(2))
+        if path.is_absolute() or ".." in path.parts or any(ord(c) < 32 for c in line):
+            raise ValueError("Invalid historical finding path")
+        if line in fingerprints:
+            raise ValueError("Duplicate historical fingerprint")
+        fingerprints.append(line)
+        reason = ""
+    return fingerprints
+
+
+def trusted_gitleaks_ignore(root, destination, environ=None):
+    """Only the PR base can authorize exceptions; PR-head config never weakens its scan."""
+    environ = os.environ if environ is None else environ
+    if environ.get("GITHUB_EVENT_NAME") == "pull_request":
+        event = json.loads(Path(environ["GITHUB_EVENT_PATH"]).read_text())
+        revision = event["pull_request"]["base"]["sha"]
+    else:
+        revision = environ.get("GITHUB_SHA")
+        if not revision:
+            revision = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", revision):
+        raise ValueError("Invalid trusted revision")
+    # ls-tree distinguishes a genuinely absent ignore file from a missing Git
+    # object/permission failure. Symlinks and submodules cannot provide policy.
+    entry = subprocess.run(
+        ["git", "ls-tree", revision, "--", ".gitleaksignore"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    text = ""
+    if entry:
+        if not entry.startswith(("100644 blob ", "100755 blob ")):
+            raise ValueError("Historical exceptions must be a regular tracked file")
+        text = subprocess.run(
+            ["git", "show", f"{revision}:.gitleaksignore"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout
+    entries = validate_gitleaks_ignore(text)
+    destination.write_text("\n".join(entries) + ("\n" if entries else ""))
+    return {"revision": revision, "fingerprints": entries}
+
+
 def main(root, mode):
     root = Path(root).resolve()
     output = root / ".quality-results"
     output.mkdir(exist_ok=True)
     findings = []
     errors = []
+    history_exceptions = None
     config = configuration(root).get("security", {})
     with tempfile.TemporaryDirectory(prefix="quality-scan-") as temp:
         raw = Path(temp)
@@ -252,12 +333,18 @@ def main(root, mode):
                     {0, 1},
                 )
             )
+            try:
+                history_exceptions = trusted_gitleaks_ignore(root, raw / "gitleaks-ignore")
+            except (ValueError, OSError, KeyError, subprocess.CalledProcessError):
+                errors.append(
+                    "gitleaks: trusted exception policy could not be loaded; analysis incomplete"
+                )
             gitleaks = [
                 "gitleaks",
                 "git",
                 str(root / ".git"),
                 "--gitleaks-ignore-path",
-                str(raw / "ignore"),
+                str(raw / "gitleaks-ignore"),
                 "--ignore-gitleaks-allow",
                 "--exit-code=10",
                 "--redact=100",
@@ -278,7 +365,8 @@ def main(root, mode):
                 if not all(re.fullmatch("[0-9a-f]{40}", s) for s in (base, head)):
                     raise ValueError("Invalid commit SHA")
                 gitleaks += ["--log-opts", f"{base}..{head}"]
-            scanners.append(("gitleaks", gitleaks, {0, 10}))
+            if history_exceptions is not None:
+                scanners.append(("gitleaks", gitleaks, {0, 10}))
             scanners.append(
                 (
                     "trivy",
@@ -412,7 +500,14 @@ def main(root, mode):
                 f"dep|{item['path']}|{item['package']}|{item['rule']}".encode()
             ).hexdigest()[:24]
         previous = unique.get(item["id"])
-        rank = {"UNKNOWN": 0, "LOW": 1, "MODERATE": 2, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
+        rank = {
+            "UNKNOWN": 0,
+            "LOW": 1,
+            "MODERATE": 2,
+            "MEDIUM": 2,
+            "HIGH": 3,
+            "CRITICAL": 4,
+        }
         if not previous or rank.get(item["severity"], 0) > rank.get(previous["severity"], 0):
             unique[item["id"]] = item
     # Path-based findings must have stable IDs across checkout locations.
@@ -429,6 +524,7 @@ def main(root, mode):
     else:
         applicability = "applicable"
     document = {
+        "gitleaks_exceptions": history_exceptions,
         "applicability": applicability,
         "schema": 1,
         "kind": mode,

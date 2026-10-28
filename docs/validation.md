@@ -26,3 +26,13 @@ still need the live pilot. Do not expand rollout before that evidence exists.
 
 Pilot repository baseline and private organization discovery are kept in the
 private pilot change, not in this public repository.
+
+## Historical fixture handling
+
+The follow-up has 27 passing focused tests. These include trusted PR-base
+selection, PR-head bypass attempts, working-tree tampering, symlink/missing
+Git-object rejection, exact fingerprint validation and retained commit metadata.
+A local Gitleaks 8.30.1 full-history scan of the spec-engine fixture-exception
+proposal passes with zero findings. A new synthetic secret remains blocking even
+when its PR head adds its own fingerprint to the ignore file. No real secret
+values are printed, and critical/debt-baseline policy remains unchanged.
