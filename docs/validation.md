@@ -1,0 +1,22 @@
+# Local validation evidence — 2026-10-28
+
+- 19 focused unit tests pass, including monorepo/framework detection, symlinks,
+  CVSS severity, unwaivable secrets/critical findings, expiry, missing-tool
+  reporting, stale plans, pagination, idempotency and incomplete scan safety.
+- All central reusable and validation workflows pass Actionlint locally.
+- Semgrep 1.182.1 validates all three local rules and detects the unsafe-eval
+  fixture with no account.
+- Gitleaks 8.30.1 detects a synthetic committed secret using the exact command
+  flags, against the git directory with a root ignore file present. Raw output
+  and secret values were withheld; no real credential was used.
+- Python syntax and Ruff E9/F checks pass.
+
+These checks do not establish live GitHub activation. The central revision is
+not published, Renovate is not installed, no settings or credentials were added,
+and no adoption PRs or tracking issues were created. Trivy/OSV database access,
+Linux binary downloads, cross-repository reusable-workflow calls, full history
+scan triage, private reporting access and the optional performance fixtures
+still need the live pilot. Do not expand rollout before that evidence exists.
+
+Pilot repository baseline and private organization discovery are kept in the
+private pilot change, not in this public repository.

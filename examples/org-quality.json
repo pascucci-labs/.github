@@ -1,0 +1,19 @@
+{
+  "quality": {
+    "commands": [
+      {"path": ".", "run": ["npm", "ci"]},
+      {"path": ".", "run": ["npm", "run", "lint"]},
+      {"path": ".", "run": ["npm", "run", "test:ci"]}
+    ],
+    "general": true
+  },
+  "security": {"images": []},
+  "performance": {
+    "url": "http://127.0.0.1:3000/",
+    "prepare": [["npm", "ci"], ["npm", "run", "build"]],
+    "start": ["npm", "run", "start"],
+    "lighthouse": "lighthouserc.cjs",
+    "k6": "tests/k6-smoke.js",
+    "blocking": false
+  }
+}

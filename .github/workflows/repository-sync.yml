@@ -38,7 +38,9 @@ jobs:
       - name: Collect trusted repository results
         env:
           GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
-        run: python scripts/report-results.py
+        run: |
+          python scripts/report-results.py
+          cat organization-report/report.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
