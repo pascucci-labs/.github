@@ -91,11 +91,28 @@ check, not an absence of findings.
 
 Gitleaks scans only base..head commits for a PR, and repository history on main,
 schedules and manual runs. Fetch depth is zero. It uses upstream default rules,
-central config, full redaction and a distinct findings exit code. Source
+central config, full redaction and a distinct findings exit code. Sanitized
+history findings include their original commit and native fingerprint so a
+moved/deleted file can still be investigated. Source
 snippets, matches and secret values never enter published reports. Raw scanner
 stdout/stderr is captured and discarded; temporary raw JSON is deleted.
-The scan targets `.git`, supplies a neutral ignore file and disables inline
-allow comments, so PR-owned ignore files do not waive new secrets. A fresh
+The scan targets `.git` and disables inline allow comments. Exact historical
+false positives can be documented in the standard root `.gitleaksignore`: each
+entry requires its complete commit:file:rule:line fingerprint and an explanatory
+comment. Wildcards, path-only/rule-only entries, duplicates, symlinks and missing
+reasons fail closed. PR jobs read that file from the trusted **base commit**,
+never the PR head. Default-branch pushes/schedules/manual runs use their
+triggering commit; feature-branch manual runs use the fetched default branch
+instead, so they cannot approve their own exceptions through another event.
+Untracked/modified working-tree ignore files are never used. The normalized
+report records the trusted revision and exception fingerprints.
+
+Use this only for inspected test fixtures or non-secret prose. An exception
+requires review in the repository PR. It is not a waiver for an actual credential
+or an ordinary debt baseline. The exact old occurrence is exempted; copying the
+same text into a new commit produces a different fingerprint and still fails.
+A PR cannot approve a new exception for its own secret. Keep real credentials
+blocking and rotate them through the owner's authorized credential process. A fresh
 history finding may require credential rotation and remediation; do not hide it.
 
 Trivy scans dependency vulnerabilities, Docker configuration and Terraform/IaC;

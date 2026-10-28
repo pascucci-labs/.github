@@ -1,6 +1,7 @@
 import datetime as dt
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -110,7 +111,10 @@ class PolicyTests(unittest.TestCase):
             "id": "GHSA-example",
             "aliases": ["CVE-2026-1234"],
             "severity": [
-                {"type": "CVSS_V3", "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}
+                {
+                    "type": "CVSS_V3",
+                    "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+                }
             ],
             "affected": [{"ranges": [{"events": [{"fixed": "2.0"}]}]}],
         }
@@ -119,7 +123,10 @@ class PolicyTests(unittest.TestCase):
                 {
                     "source": {"path": "lock"},
                     "packages": [
-                        {"package": {"name": "example", "commit": "abc"}, "vulnerabilities": [vuln]}
+                        {
+                            "package": {"name": "example", "commit": "abc"},
+                            "vulnerabilities": [vuln],
+                        }
                     ],
                 }
             ]
@@ -182,8 +189,186 @@ class PolicyTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 perf.target_allowed(url)
         self.assertEqual(
-            perf.target_allowed("https://staging.example", True), "https://staging.example"
+            perf.target_allowed("https://staging.example", True),
+            "https://staging.example",
         )
+
+
+class HistoryExceptionTests(unittest.TestCase):
+    def setUp(self):
+        self.security = module("security")
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name).resolve()
+        self.repo = self.root / "repo"
+        subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
+        self.output = self.root / "generated-ignore"
+        self.fingerprint = "a" * 40 + ":tests/fixture.py:generic-api-key:12"
+
+    def git(self, *args):
+        return subprocess.run(
+            [
+                "git",
+                "-c",
+                "user.name=Fixture",
+                "-c",
+                "user.email=fixture@example.invalid",
+                *args,
+            ],
+            cwd=self.repo,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    def commit(self, message):
+        self.git("add", ".")
+        self.git("commit", "-qm", message)
+        return self.git("rev-parse", "HEAD")
+
+    def test_accepts_only_exact_explained_fingerprints(self):
+        text = (
+            "# Synthetic scanner regression fixture, never a credential\n" + self.fingerprint + "\n"
+        )
+        self.assertEqual(self.security.validate_gitleaks_ignore(text), [self.fingerprint])
+        invalid = [
+            self.fingerprint,
+            "# Synthetic fixture\n*.py",
+            "# Synthetic fixture\n" + self.fingerprint.replace("fixture.py", "*.py"),
+            "# Synthetic fixture\n" + self.fingerprint.replace("tests/fixture.py", "../fixture.py"),
+            text + text,
+        ]
+        for value in invalid:
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                self.security.validate_gitleaks_ignore(value)
+
+    def test_pr_head_cannot_introduce_an_exception(self):
+        (self.repo / "README.md").write_text("base")
+        base = self.commit("Base without exceptions")
+        (self.repo / ".gitleaksignore").write_text(
+            "# Synthetic scanner fixture\n" + self.fingerprint + "\n"
+        )
+        head = self.commit("Untrusted PR proposes an exception")
+        event = self.root / "event.json"
+        event.write_text(
+            json.dumps({"pull_request": {"base": {"sha": base}, "head": {"sha": head}}})
+        )
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "pull_request",
+                "GITHUB_EVENT_PATH": str(event),
+                "GITHUB_SHA": head,
+            },
+        )
+        self.assertEqual(result, {"revision": base, "fingerprints": []})
+        self.assertEqual(self.output.read_text(), "")
+
+    def test_pr_uses_base_exceptions_despite_head_tampering(self):
+        (self.repo / ".gitleaksignore").write_text(
+            "# Synthetic scanner fixture\n" + self.fingerprint + "\n"
+        )
+        base = self.commit("Base has reviewed fixture exception")
+        (self.repo / ".gitleaksignore").write_text("# Attempted wildcard exception\n*\n")
+        head = self.commit("Untrusted change")
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"pull_request": {"base": {"sha": base}}}))
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "pull_request",
+                "GITHUB_EVENT_PATH": str(event),
+                "GITHUB_SHA": head,
+            },
+        )
+        self.assertEqual(result["fingerprints"], [self.fingerprint])
+
+    def test_manual_feature_branch_cannot_authorize_its_own_exception(self):
+        (self.repo / "README.md").write_text("base")
+        base = self.commit("Trusted default branch")
+        self.git("update-ref", "refs/remotes/origin/main", base)
+        (self.repo / ".gitleaksignore").write_text(
+            "# Untrusted feature exception\n" + self.fingerprint + "\n"
+        )
+        head = self.commit("Feature adds exception")
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"repository": {"default_branch": "main"}}))
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "workflow_dispatch",
+                "GITHUB_REF": "refs/heads/feature",
+                "GITHUB_SHA": head,
+                "GITHUB_EVENT_PATH": str(event),
+            },
+        )
+        self.assertEqual(result, {"revision": base, "fingerprints": []})
+
+    def test_default_branch_run_uses_its_triggering_commit(self):
+        (self.repo / ".gitleaksignore").write_text(
+            "# Reviewed historical fixture\n" + self.fingerprint + "\n"
+        )
+        revision = self.commit("Default branch policy")
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"repository": {"default_branch": "main"}}))
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "push",
+                "GITHUB_REF": "refs/heads/main",
+                "GITHUB_SHA": revision,
+                "GITHUB_EVENT_PATH": str(event),
+            },
+        )
+        self.assertEqual(result["fingerprints"], [self.fingerprint])
+        self.assertEqual(result["revision"], revision)
+
+    def test_working_tree_file_cannot_add_an_exception(self):
+        (self.repo / "README.md").write_text("base")
+        revision = self.commit("Base")
+        (self.repo / ".gitleaksignore").write_text(
+            "# Untracked fixture exception\n" + self.fingerprint + "\n"
+        )
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo, self.output, {"GITHUB_SHA": revision}
+        )
+        self.assertEqual(result["fingerprints"], [])
+
+    def test_symlink_policy_is_rejected(self):
+        (self.repo / "outside.txt").write_text("# A symlink may not provide scanner policy\n")
+        (self.repo / ".gitleaksignore").symlink_to("outside.txt")
+        revision = self.commit("Symlink")
+        with self.assertRaises(ValueError):
+            self.security.trusted_gitleaks_ignore(self.repo, self.output, {"GITHUB_SHA": revision})
+
+    def test_missing_trusted_commit_does_not_mean_empty_policy(self):
+        (self.repo / "README.md").write_text("base")
+        self.commit("Base")
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.security.trusted_gitleaks_ignore(self.repo, self.output, {"GITHUB_SHA": "f" * 40})
+
+    def test_history_report_retains_location_but_not_secret(self):
+        result = self.security.normalize(
+            "gitleaks",
+            [
+                {
+                    "Commit": "a" * 40,
+                    "Fingerprint": self.fingerprint,
+                    "RuleID": "generic-api-key",
+                    "File": "tests/fixture.py",
+                    "StartLine": 12,
+                    "Secret": "SENSITIVE_VALUE",
+                    "Match": "SENSITIVE_VALUE",
+                }
+            ],
+        )[0]
+        self.assertEqual(result["commit"], "a" * 40)
+        self.assertEqual(result["fingerprint"], self.fingerprint)
+        self.assertNotIn("SENSITIVE_VALUE", json.dumps(result))
 
 
 class SyncTests(unittest.TestCase):
@@ -200,13 +385,18 @@ class SyncTests(unittest.TestCase):
         }
 
     def test_existing_ci_and_dependabot_preserved(self):
-        paths = [".github/workflows/deploy.yml", ".github/dependabot.yml", "package.json"]
+        paths = [
+            ".github/workflows/deploy.yml",
+            ".github/dependabot.yml",
+            "package.json",
+        ]
         result = self.sync.propose(self.repo, paths, "a" * 40, lambda _: "{}")
         self.assertNotIn(".github/dependabot.yml", result["files"])
         self.assertNotIn(".github/renovate.json", result["files"])
         self.assertNotIn(".github/workflows/deploy.yml", result["files"])
         self.assertEqual(
-            json.loads(result["files"][".github/org-quality.json"])["quality"]["commands"], []
+            json.loads(result["files"][".github/org-quality.json"])["quality"]["commands"],
+            [],
         )
 
     def test_idempotent_and_archived(self):
@@ -303,9 +493,9 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(report["manual"])
 
     def test_hidden_result_directory_is_explicitly_uploaded(self):
-        for name in ('quality', 'security', 'dependency-audit', 'performance'):
-            text = (ROOT / '.github/workflows' / f'{name}.yml').read_text()
-            self.assertIn('path: .quality-results/\n          include-hidden-files: true', text)
+        for name in ("quality", "security", "dependency-audit", "performance"):
+            text = (ROOT / ".github/workflows" / f"{name}.yml").read_text()
+            self.assertIn("path: .quality-results/\n          include-hidden-files: true", text)
 
     def test_every_external_action_is_sha_pinned_and_no_unsafe_trigger(self):
         import re
