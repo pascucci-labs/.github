@@ -104,7 +104,9 @@ reasons fail closed. PR jobs read that file from the trusted **base commit**,
 never the PR head. Default-branch pushes/schedules/manual runs use their
 triggering commit; feature-branch manual runs use the fetched default branch
 instead, so they cannot approve their own exceptions through another event.
-Untracked/modified working-tree ignore files are never used. The normalized
+Untracked/modified working-tree ignore files are never used. Each listed commit
+must be an ancestor of the trusted revision; a policy cannot pre-authorize a
+credential on an unmerged branch. The normalized
 report records the trusted revision and exception fingerprints.
 
 Use this only for inspected test fixtures or non-secret prose. An exception

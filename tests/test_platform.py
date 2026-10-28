@@ -203,7 +203,9 @@ class HistoryExceptionTests(unittest.TestCase):
         self.repo = self.root / "repo"
         subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
         self.output = self.root / "generated-ignore"
-        self.fingerprint = "a" * 40 + ":tests/fixture.py:generic-api-key:12"
+        (self.repo / "fixture.txt").write_text("Initial harmless fixture")
+        self.seed = self.commit("Initial history")
+        self.fingerprint = self.seed + ":tests/fixture.py:generic-api-key:12"
 
     def git(self, *args):
         return subprocess.run(
@@ -326,6 +328,20 @@ class HistoryExceptionTests(unittest.TestCase):
         )
         self.assertEqual(result["fingerprints"], [self.fingerprint])
         self.assertEqual(result["revision"], revision)
+
+    def test_exception_cannot_pre_authorize_a_commit_on_another_branch(self):
+        self.git("switch", "-qc", "unmerged")
+        (self.repo / "future.txt").write_text("Unmerged branch content")
+        future = self.commit("Unmerged content")
+        self.git("switch", "--detach", self.seed)
+        (self.repo / ".gitleaksignore").write_text(
+            "# Attempt to pre-authorize unmerged history\n"
+            + future
+            + ":future.txt:generic-api-key:1\n"
+        )
+        revision = self.commit("Policy without the unmerged ancestor")
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.security.trusted_gitleaks_ignore(self.repo, self.output, {"GITHUB_SHA": revision})
 
     def test_working_tree_file_cannot_add_an_exception(self):
         (self.repo / "README.md").write_text("base")

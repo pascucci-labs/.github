@@ -312,6 +312,15 @@ def trusted_gitleaks_ignore(root, destination, environ=None):
             check=True,
         ).stdout
     entries = validate_gitleaks_ignore(text)
+    # Exceptions can only describe already-merged history, never pre-authorize
+    # a credential on another branch for a future PR.
+    for commit in sorted({entry.split(":", 1)[0] for entry in entries}):
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", commit, revision],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
     destination.write_text("\n".join(entries) + ("\n" if entries else ""))
     return {"revision": revision, "fingerprints": entries}
 

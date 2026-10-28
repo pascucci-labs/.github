@@ -29,7 +29,7 @@ private pilot change, not in this public repository.
 
 ## Historical fixture handling
 
-The follow-up has 29 passing focused tests. These include trusted PR-base
+The follow-up has 30 passing focused tests. These include trusted PR-base
 selection, PR-head bypass attempts, working-tree tampering, symlink/missing
 Git-object rejection, exact fingerprint validation and retained commit metadata.
 A local Gitleaks 8.30.1 full-history scan of the spec-engine fixture-exception
