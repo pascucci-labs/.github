@@ -1,33 +1,32 @@
-# pascucci-labs
+# Pascucci Labs
 
-> An open tabletop role-playing system, built in Canada.
+> A small Canadian software studio, run by Greg Pascucci with the help of AI agents.
 
-OpenRPG.ca is building a modern home for tabletop role-playing: a place for
-worlds, stories, maps, and the tools that bring them together.
+We build and run websites and tools for tabletop gaming, small businesses and
+the public. Much of the work, from code and reviews to research and drafts,
+is done by AI agents. Greg Pascucci is accountable for all of it and decides
+anything that matters.
 
-## Visit OpenRPG
+## What we run
 
-**[Open the website →](https://www.openrpg.ca)**
+| | |
+|---|---|
+| **[OpenRPG](https://www.openrpg.ca)** | An open tabletop role-playing system set in the world of Openheim: rules, world pages, maps and tools for game masters. |
+| **[Host With Pascucci](https://pascucci.rocks)** | Simple websites and hosting for small businesses in Greater Victoria, BC. |
+| **[BC Legal AI](https://bclegalai.ca)** | A free research tool for questions about BC law. It is a tool, not legal advice. |
+| **Code with Pascucci** | Programming lessons from Greg. |
 
-The website is the best place to follow the project and see what is available.
+## Sites we host and look after
 
-## What we are building
+- [Eat Something Pretty](https://eatsomethingpretty.com)
+- [Pretty Boutique](https://prettyboutique.ca)
+- [Greg's PC Fix](https://gregspcfix.ca), computer repair in Langford, BC
 
-The OpenRPG organization brings together the software behind the project:
+## Open source
 
-- **The OpenRPG platform** — the main application and its public experience
-- **World and map tools** — systems for creating and exploring settings
-- **Content tools** — structured stories, places, and adventures
-- **Development infrastructure** — the services and automation that keep the
-  project reliable
+- [bb-coop](https://github.com/pascucci-labs/bb-coop): a two-player online
+  co-op mod for Battle Brothers.
 
-The repositories are currently private while the platform is under active
-development. Public documentation, releases, and contribution guidance will be
-linked here as they become ready.
+Most of our repositories are private.
 
-## Stay connected
-
-- [Visit openrpg.ca](https://www.openrpg.ca)
-- [Browse the Pascucci-Labs organization](https://github.com/pascucci-labs)
-
-<sub>Pascucci Labs · Canada</sub>
+<sub>Pascucci Labs · Langford, British Columbia, Canada</sub>
