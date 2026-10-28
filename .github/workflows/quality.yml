@@ -71,7 +71,7 @@ jobs:
       - name: Install general tooling
         run: |
           python -m pip install 'uv==0.13.6' 'yamllint==1.37.1'
-          npm install --global 'markdownlint-cli2@0.24.0' 'editorconfig-checker@7.0.0'
+          npm install --global 'markdownlint-cli2@0.24.0' 'editorconfig-checker@6.2.0'
           python .quality-platform/scripts/install-tools.py actionlint
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - name: Run repository quality commands
