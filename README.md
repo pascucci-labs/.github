@@ -1,4 +1,4 @@
-# `.github` — org defaults for OpenRPG-ca
+# `.github` — org defaults for Pascucci Labs
 
 GitHub falls back to this repository for community health files that a given
 repository does not define itself. Anything here becomes the org-wide default;
@@ -14,17 +14,17 @@ any repository can still override it by shipping its own copy.
 
 ## Agent configuration
 
-The substance lives in [`openrpg-ca/agent-skills`](https://github.com/openrpg-ca/agent-skills),
+The substance lives in [`pascucci-labs/spec-engine` `.agents/`](https://github.com/pascucci-labs/spec-engine/tree/main/.agents),
 not here. This repository only points at it, so there is one source of truth:
 
-- `agent-skills/AGENTS.md` — shared working style and shell conventions
-- `agent-skills/policies/agent-scope.md` — what agents may do unattended
-- `agent-skills/policies/identity.md` — how agent identities authenticate
-- `agent-skills/policies/rulesets/` — org branch rules, as version-controlled JSON
+- `.agents/global/AGENTS.md` — shared working style and shell conventions
+- `.agents/policies/agent-scope.md` — what agents may do unattended
+- `.agents/policies/identity.md` — how agent identities authenticate
+- `.agents/policies/rulesets/` — org branch rules, as version-controlled JSON
 
 ## Note on scope
 
 Community health fallback covers `CODEOWNERS`, issue and PR templates,
 `CONTRIBUTING`, `SECURITY`, and similar. It does **not** distribute workflows,
 settings, or agent instruction files into other repositories — those still have
-to be committed per repository, or symlinked locally from `agent-skills`.
+to be committed per repository, or installed locally by `spec-engine/.agents/install.sh`.
