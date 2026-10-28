@@ -14,7 +14,7 @@
 
 ## Disclosures
 
-Tick anything this PR does. See `agent-scope.md` in `openrpg-ca/agent-skills`.
+Tick anything this PR does. See `.agents/policies/agent-scope.md` in `pascucci-labs/spec-engine`.
 
 - [ ] Adds a new runtime dependency <!-- name it and say why -->
 - [ ] Changes CI workflow files

@@ -1,12 +1,12 @@
-# Agent Instructions — OpenRPG-ca
+# Agent Instructions — Pascucci Labs
 
 This is the organization defaults repository. It holds no application code.
 
 The shared agent configuration lives in
-[`openrpg-ca/agent-skills`](https://github.com/openrpg-ca/agent-skills). Read it
+[`pascucci-labs/spec-engine` `.agents/`](https://github.com/pascucci-labs/spec-engine/tree/main/.agents). Read it
 before working in any repository in this organization:
 
-- `AGENTS.md` — working style, shell conventions, context detection
+- `global/AGENTS.md` — working style, shell conventions, context detection
 - `policies/agent-scope.md` — green / yellow / red action classification
 - `policies/identity.md` — agent authentication and permission ceilings
 
