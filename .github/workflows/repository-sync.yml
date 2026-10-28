@@ -1,0 +1,49 @@
+name: Repository inventory and reporting
+on:
+  workflow_call:
+    inputs:
+      platform-ref:
+        required: true
+        type: string
+    secrets:
+      ORG_READ_TOKEN:
+        description: Read-only organization inventory and Actions artifacts credential
+        required: true
+permissions:
+  contents: read
+jobs:
+  discover:
+    # Run from a PRIVATE controller (pilot spec-engine), never publish private inventory.
+    if: github.event.repository.private && github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Validate central revision
+        env:
+          PLATFORM_REF: ${{ inputs.platform-ref }}
+        run: '[[ "$PLATFORM_REF" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: pascucci-labs/.github
+          ref: ${{ inputs.platform-ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Discover adoption proposals without writes
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+          PLATFORM_REF: ${{ inputs.platform-ref }}
+        run: python scripts/sync-repositories.py --ref "$PLATFORM_REF" --dry-run
+      - name: Collect trusted repository results
+        env:
+          GH_TOKEN: ${{ secrets.ORG_READ_TOKEN }}
+        run: python scripts/report-results.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: private-organization-quality
+          path: |
+            repository-plan.json
+            organization-report/
+          retention-days: 7

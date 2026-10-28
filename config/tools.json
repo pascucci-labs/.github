@@ -1,0 +1,7 @@
+{
+  "gitleaks": {"url":"https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz","sha256":"551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb","member":"gitleaks"},
+  "trivy": {"url":"https://github.com/aquasecurity/trivy/releases/download/v0.76.1/trivy_0.76.1_Linux-64bit.tar.gz","sha256":"c7cbe3137fb8a48a17574bede3dd6beb16742d1e9772929940fc90082c39d9c0","member":"trivy"},
+  "osv-scanner": {"url":"https://github.com/google/osv-scanner/releases/download/v2.7.0/osv-scanner_linux_amd64","sha256":"160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b"},
+  "actionlint": {"url":"https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz","sha256":"8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8","member":"actionlint"},
+  "k6": {"url":"https://github.com/grafana/k6/releases/download/v2.3.0/k6-v2.3.0-linux-amd64.tar.gz","sha256":"39c3117b6af817592dcd0ce4242105c0a7af10948c2a425306f0be8f7a8a8ab1","member":"k6-v2.3.0-linux-amd64/k6"}
+}

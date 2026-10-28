@@ -1,0 +1,73 @@
+name: performance
+on:
+  workflow_call:
+    inputs:
+      platform-ref:
+        description: Immutable central commit, matching the caller uses ref
+        required: true
+        type: string
+      authorize-external:
+        description: Explicit authorization for the configured external target, manual runs only
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate central revision
+        env:
+          PLATFORM_REF: ${{ inputs.platform-ref }}
+        run: '[[ "$PLATFORM_REF" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: pascucci-labs/.github
+          ref: ${{ inputs.platform-ref }}
+          path: .quality-platform
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+      - name: Check for configured performance target
+        id: target
+        run: |
+          python - <<'PYCODE'
+          import json, os
+          from pathlib import Path
+          path = Path('.github/org-quality.json')
+          configured = bool(json.loads(path.read_text()).get('performance')) if path.exists() else False
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'configured={str(configured).lower()}\n')
+          PYCODE
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: steps.target.outputs.configured == 'true'
+        with:
+          node-version: '22'
+      - name: Install optional performance tooling
+        if: steps.target.outputs.configured == 'true'
+        run: |
+          python .quality-platform/scripts/install-tools.py k6
+          npm install --global '@lhci/cli@0.15.1'
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Run configured budgets and thresholds
+        env:
+          AUTHORIZE_EXTERNAL: ${{ inputs.authorize-external }}
+        run: |
+          args=()
+          if [[ "$AUTHORIZE_EXTERNAL" == true ]]; then args+=(--authorize-external); fi
+          python .quality-platform/scripts/performance.py "${args[@]}"
+      - name: Preserve sanitized results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: performance-results
+          path: .quality-results/
+          if-no-files-found: warn
+          retention-days: 7

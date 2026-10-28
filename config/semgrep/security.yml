@@ -1,0 +1,31 @@
+# Original local rules: no Semgrep registry/account/network rule fetch required.
+rules:
+  - id: python-eval-console-input
+    languages: [python]
+    severity: ERROR
+    message: Untrusted console input executes as Python code; parse data instead.
+    metadata:
+      severity: HIGH
+      confirmed: true
+      cwe: CWE-95
+    pattern: eval(input(...), ...)
+  - id: javascript-eval-request
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Request data executes as JavaScript; parse and validate data instead.
+    metadata:
+      severity: HIGH
+      confirmed: true
+      cwe: CWE-95
+    pattern-either:
+      - pattern: eval($REQ.query.$FIELD)
+      - pattern: eval($REQ.body.$FIELD)
+  - id: java-insecure-tls-context
+    languages: [java]
+    severity: WARNING
+    message: Review obsolete TLS protocol selection.
+    metadata:
+      severity: MEDIUM
+    pattern-either:
+      - pattern: SSLContext.getInstance("SSL")
+      - pattern: SSLContext.getInstance("TLSv1")

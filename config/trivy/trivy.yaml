@@ -1,0 +1,8 @@
+# Invocation explicitly selects vuln/misconfig; never invoke secret scanning here.
+scan:
+  skip-dirs:
+    - .git
+    - .quality-platform
+    - .quality-results
+    - node_modules
+    - .venv

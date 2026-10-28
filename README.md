@@ -28,3 +28,10 @@ Community health fallback covers `CODEOWNERS`, issue and PR templates,
 `CONTRIBUTING`, `SECURITY`, and similar. It does **not** distribute workflows,
 settings, or agent instruction files into other repositories — those still have
 to be committed per repository, or installed locally by `spec-engine/.agents/install.sh`.
+
+## Shared automation
+
+The reusable quality, security, dependency and performance workflows require
+repository callers; they are not enabled by community-file fallback. Read
+[the platform guide](docs/automation.md) for setup, safe rollout, cost and
+permissions, and [optional AI review](docs/optional-ai-review.md) for Kodus.
