@@ -259,6 +259,26 @@ def trusted_gitleaks_ignore(root, destination, environ=None):
     if environ.get("GITHUB_EVENT_NAME") == "pull_request":
         event = json.loads(Path(environ["GITHUB_EVENT_PATH"]).read_text())
         revision = event["pull_request"]["base"]["sha"]
+    elif environ.get("GITHUB_EVENT_NAME"):
+        event = json.loads(Path(environ["GITHUB_EVENT_PATH"]).read_text())
+        default_branch = event["repository"]["default_branch"]
+        if environ.get("GITHUB_REF") == f"refs/heads/{default_branch}":
+            revision = environ["GITHUB_SHA"]
+        else:
+            # A manual feature-branch run must not turn its unreviewed ignore
+            # file into a passing security status for that PR.
+            revision = subprocess.run(
+                [
+                    "git",
+                    "rev-parse",
+                    "--verify",
+                    f"refs/remotes/origin/{default_branch}^{{commit}}",
+                ],
+                cwd=root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
     else:
         revision = environ.get("GITHUB_SHA")
         if not revision:

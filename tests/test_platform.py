@@ -285,6 +285,48 @@ class HistoryExceptionTests(unittest.TestCase):
         )
         self.assertEqual(result["fingerprints"], [self.fingerprint])
 
+    def test_manual_feature_branch_cannot_authorize_its_own_exception(self):
+        (self.repo / "README.md").write_text("base")
+        base = self.commit("Trusted default branch")
+        self.git("update-ref", "refs/remotes/origin/main", base)
+        (self.repo / ".gitleaksignore").write_text(
+            "# Untrusted feature exception\n" + self.fingerprint + "\n"
+        )
+        head = self.commit("Feature adds exception")
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"repository": {"default_branch": "main"}}))
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "workflow_dispatch",
+                "GITHUB_REF": "refs/heads/feature",
+                "GITHUB_SHA": head,
+                "GITHUB_EVENT_PATH": str(event),
+            },
+        )
+        self.assertEqual(result, {"revision": base, "fingerprints": []})
+
+    def test_default_branch_run_uses_its_triggering_commit(self):
+        (self.repo / ".gitleaksignore").write_text(
+            "# Reviewed historical fixture\n" + self.fingerprint + "\n"
+        )
+        revision = self.commit("Default branch policy")
+        event = self.root / "event.json"
+        event.write_text(json.dumps({"repository": {"default_branch": "main"}}))
+        result = self.security.trusted_gitleaks_ignore(
+            self.repo,
+            self.output,
+            {
+                "GITHUB_EVENT_NAME": "push",
+                "GITHUB_REF": "refs/heads/main",
+                "GITHUB_SHA": revision,
+                "GITHUB_EVENT_PATH": str(event),
+            },
+        )
+        self.assertEqual(result["fingerprints"], [self.fingerprint])
+        self.assertEqual(result["revision"], revision)
+
     def test_working_tree_file_cannot_add_an_exception(self):
         (self.repo / "README.md").write_text("base")
         revision = self.commit("Base")

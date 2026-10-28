@@ -101,7 +101,9 @@ false positives can be documented in the standard root `.gitleaksignore`: each
 entry requires its complete commit:file:rule:line fingerprint and an explanatory
 comment. Wildcards, path-only/rule-only entries, duplicates, symlinks and missing
 reasons fail closed. PR jobs read that file from the trusted **base commit**,
-never the PR head; pushes/schedules read the checked-out triggering commit.
+never the PR head. Default-branch pushes/schedules/manual runs use their
+triggering commit; feature-branch manual runs use the fetched default branch
+instead, so they cannot approve their own exceptions through another event.
 Untracked/modified working-tree ignore files are never used. The normalized
 report records the trusted revision and exception fingerprints.
 
