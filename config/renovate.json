@@ -1,16 +1,47 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
   "timezone": "America/Vancouver",
-  "schedule": ["before 6am on monday"],
-  "prConcurrentLimit": 3,
-  "prHourlyLimit": 2,
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "prConcurrentLimit": 2,
+  "prHourlyLimit": 1,
   "rangeStrategy": "bump",
   "automerge": false,
   "dependencyDashboard": true,
-  "vulnerabilityAlerts": {"enabled": true, "schedule": ["at any time"], "prPriority": 10, "automerge": false},
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "schedule": [
+      "at any time"
+    ],
+    "prPriority": 10,
+    "automerge": false,
+    "minimumReleaseAge": "0 days",
+    "dependencyDashboardApproval": false
+  },
   "packageRules": [
-    {"matchUpdateTypes": ["minor", "patch", "pin", "digest"], "groupName": "compatible nonmajor updates"},
-    {"matchUpdateTypes": ["major"], "groupName": null, "automerge": false}
-  ]
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "{{manager}} compatible nonmajor updates"
+    },
+    {
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": null,
+      "automerge": false,
+      "dependencyDashboardApproval": true
+    }
+  ],
+  "minimumReleaseAge": "7 days",
+  "rebaseWhen": "never"
 }
