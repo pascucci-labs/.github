@@ -153,12 +153,37 @@ report path; SARIF uploads are not required.
 
 ## Dependency updates
 
-`config/renovate.json` is the shared preset: supported Renovate managers cover
-Maven/Gradle, npm, Python, pub, Docker and GitHub Actions. Nonmajor updates are
-grouped, majors remain separate, at most three concurrent PRs and two per hour,
-Monday morning Vancouver time. Vulnerability alerts have higher priority and
-can run outside the weekly window when the hosting platform supplies them.
-All automerge is disabled by default, including major and security updates.
+`config/renovate.json` is the shared preset. Routine nonmajor updates are
+grouped by package manager, run Monday morning Vancouver time, wait seven days
+after release, and allow at most two concurrent PRs and one new PR per hour.
+Automatic rebases and automerge are disabled. Major version PRs require explicit
+Dependency Dashboard approval before creation. Vulnerability alerts bypass the
+weekly window, release delay, and dashboard approval, remain higher priority,
+and still require review and passing checks before merge.
+
+`examples/dependabot.yml` provides the equivalent quiet policy for repositories
+already using Dependabot. It is a template, not an automatically inherited org
+configuration. Application updates run weekly; Actions and image updates run
+monthly. Each of the four ecosystem entries permits only one open routine PR,
+groups patch/minor updates, waits seven days after release, and disables rebase
+churn. The total is up to four routine PRs per repository, not a global cap.
+The `allow.update-types` rule restricts routine updates to patch/minor without
+ignoring security fixes that require a major update. No automerge or approval
+workflow is installed.
+
+Security PRs use GitHub's separate fixed limit of ten and are not held to the
+routine schedule/cooldown. Existing Dependabot PRs can continue rebasing for
+30 days after creation despite the new disabled rebase strategy. Preserve an
+existing reviewed dependency PR rather than closing/recreating it merely to
+apply this policy. A human can request a needed rebase explicitly.
+
+References: [Dependabot options](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference),
+[Renovate options](https://docs.renovatebot.com/configuration-options/).
+
+Adoption is through repository PRs. Existing immutable preset references do not
+change when the central preset changes: update each reference to the reviewed
+merge SHA in a separate reviewed rollout. Do not install a second dependency
+bot, change organization settings, or enable paid services as part of adoption.
 
 Install/authorize the free hosted Renovate App only after owner approval. It
 needs access to the selected repositories and may send code/dependency metadata
