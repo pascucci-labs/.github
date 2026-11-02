@@ -299,10 +299,46 @@ minutes and multiply by PR/main/scheduled run counts before expanding.
 
 A Windows 11/4090 host adds no benefit for ordinary lint/scanning. If later used,
 run trusted jobs in disposable Linux VMs, no host Docker socket/mounts, no LAN
-production access or host credentials, and destroy VM disks per job. Never send
-untrusted PR code to a persistent self-hosted runner. Electricity, patching,
+production access or host credentials, and destroy writable state per job.
+Never send untrusted PR code to a self-hosted runner, and never send any job to
+a runner whose state survives from one job to the next. Electricity, patching,
 virtualization and monitoring are ongoing costs even when Actions minutes are
-free. Keep all initial jobs on ephemeral GitHub runners.
+free. By default every job runs on ephemeral GitHub runners; the switch below
+is the only exception for the shared checks.
+
+### Self-hosted switch for the shared checks
+
+The quality, security, dependency and performance jobs stay on `ubuntu-24.04`
+unless the organization variable `ORG_CI_RUNNER` is `self-hosted`. Even then,
+only trusted code goes to a runner labelled `pascucci-ci`: pushes, schedules
+and manual runs on the default branch, and same-repository pull requests opened by the
+`pascucci-labs-codev` app or the owner. Every other pull request (Dependabot,
+Renovate, any other author, any fork) and any run on another branch stays on
+GitHub-hosted runners. Pull requests are decided
+by who opened the pull request, not by who triggered the run.
+
+Why: these jobs take under a minute but bill a whole minute each, three per
+push. On 2026-11-01 they were about 60% of the organization's 1,664 billed
+Linux minutes, and October went US$93 over the included allowance.
+
+Before the owner sets the variable, all of these must be true:
+
+- The `pascucci-ci` runner is in a runner group limited to the pilot
+  repositories, and the variable's repository visibility matches it.
+- It runs one job at a time, and everything the job could write is destroyed
+  between jobs: the runner user, its home, tool caches and temp folders are
+  wiped and rebuilt (home-lab's one-job runner model), or the VM disk is
+  reset. A fresh runner registration alone is not enough, because the shared
+  checks install pip and npm tools into the tool cache and `$HOME`.
+- The job user has no sudo and no Docker socket, the VM holds no host or
+  production credentials, and a firewall blocks it from LAN hosts other than
+  the gateway.
+- Someone watches it: jobs queue, rather than fall back, while the runner is
+  offline, so an offline runner blocks required checks in every pilot
+  repository.
+
+To undo, delete the variable. Every repository goes back to GitHub-hosted
+runners on the next run.
 
 ## Local validation and maintenance
 
