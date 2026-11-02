@@ -304,6 +304,25 @@ untrusted PR code to a persistent self-hosted runner. Electricity, patching,
 virtualization and monitoring are ongoing costs even when Actions minutes are
 free. Keep all initial jobs on ephemeral GitHub runners.
 
+### Self-hosted switch for the shared checks
+
+The quality, security, dependency and performance jobs stay on `ubuntu-24.04`
+unless the organization variable `ORG_CI_RUNNER` is `self-hosted`. Then they go
+to a runner labelled `pascucci-ci`. Dependabot runs and fork pull requests
+always stay on GitHub-hosted runners. The variable's repository visibility
+decides which repositories use the switch, so a pilot can start with a few.
+
+Why: these jobs take under a minute but bill a whole minute each, three per
+push. On 2026-11-01 they were about 60% of the organization's 1,664 billed
+Linux minutes, and October went US$93 over the included allowance.
+
+Before setting the variable, the runner host must meet the conditions above: a
+Linux VM with no route to LAN production hosts, no host credentials, no Docker
+socket, and a disk reset or ephemeral runner registration between jobs. Jobs
+queue, rather than fall back, while the runner is offline. To undo, delete the
+variable, and every repository goes back to GitHub-hosted runners on the next
+run.
+
 ## Local validation and maintenance
 
 Run `python -m unittest discover -s tests -v`, `actionlint`, and

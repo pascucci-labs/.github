@@ -14,7 +14,9 @@ permissions:
   contents: read
 jobs:
   check:
-    runs-on: ubuntu-24.04
+    # GitHub-hosted unless the org variable ORG_CI_RUNNER is 'self-hosted'
+    # (docs/automation.md, Cost and isolation).
+    runs-on: ${{ vars.ORG_CI_RUNNER == 'self-hosted' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.fork != true && fromJSON('["self-hosted","Linux","X64","pascucci-ci"]') || 'ubuntu-24.04' }}
     timeout-minutes: 15
     if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     steps:
