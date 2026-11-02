@@ -310,10 +310,11 @@ is the only exception for the shared checks.
 
 The quality, security, dependency and performance jobs stay on `ubuntu-24.04`
 unless the organization variable `ORG_CI_RUNNER` is `self-hosted`. Even then,
-only trusted code goes to a runner labelled `pascucci-ci`: pushes to main,
-schedules, manual runs, and same-repository pull requests opened by the
+only trusted code goes to a runner labelled `pascucci-ci`: pushes, schedules
+and manual runs on the default branch, and same-repository pull requests opened by the
 `pascucci-labs-codev` app or the owner. Every other pull request (Dependabot,
-Renovate, any other author, any fork) stays on GitHub-hosted runners, decided
+Renovate, any other author, any fork) and any run on another branch stays on
+GitHub-hosted runners. Pull requests are decided
 by who opened the pull request, not by who triggered the run.
 
 Why: these jobs take under a minute but bill a whole minute each, three per
