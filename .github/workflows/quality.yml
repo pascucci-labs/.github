@@ -23,9 +23,10 @@ permissions:
   contents: read
 jobs:
   check:
-    # GitHub-hosted unless the org variable ORG_CI_RUNNER is 'self-hosted'
+    # GitHub-hosted unless the org variable ORG_CI_RUNNER is 'self-hosted', and then
+    # only for main, schedules and same-repo PRs by the codev app or the owner
     # (docs/automation.md, Cost and isolation).
-    runs-on: ${{ vars.ORG_CI_RUNNER == 'self-hosted' && github.actor != 'dependabot[bot]' && github.event.pull_request.head.repo.fork != true && fromJSON('["self-hosted","Linux","X64","pascucci-ci"]') || 'ubuntu-24.04' }}
+    runs-on: ${{ vars.ORG_CI_RUNNER == 'self-hosted' && (github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && contains(fromJSON('["pascucci-labs-codev[bot]","gpascucci"]'), github.event.pull_request.user.login))) && fromJSON('["self-hosted","Linux","X64","pascucci-ci"]') || 'ubuntu-24.04' }}
     timeout-minutes: 25
 
     steps:
