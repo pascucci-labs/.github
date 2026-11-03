@@ -153,6 +153,25 @@ def auto_commands(root, module):
     return commands, manual
 
 
+def for_runner(argv, env=None):
+    """Drop Playwright's --with-deps on a self-hosted runner.
+
+    --with-deps always runs `sudo apt-get install`, even when every library is
+    already there. The pascucci-ci runners give the job no sudo
+    (docs/automation.md) and have Chromium's libraries in their image
+    (home-lab's runner setup), so there the flag can only fail. GitHub-hosted
+    runs keep it. If a runner lacks a library, Playwright names it when the
+    browser starts.
+    """
+    env = os.environ if env is None else env
+    if env.get("RUNNER_ENVIRONMENT") != "self-hosted" or "--with-deps" not in argv:
+        return argv
+    if "playwright" not in argv or "install" not in argv[argv.index("playwright") + 1 :]:
+        return argv
+    print("Self-hosted runner: running playwright install without --with-deps", flush=True)
+    return [arg for arg in argv if arg != "--with-deps"]
+
+
 def main(root, only=None):
     root = Path(root).resolve()
     config = configuration(root)
@@ -182,6 +201,7 @@ def main(root, only=None):
         if key in seen:
             continue
         seen.add(key)
+        argv = for_runner(argv)
         try:
             execute(argv, cwd, env=os.environ | {"CI": "true"})
             results.append(
