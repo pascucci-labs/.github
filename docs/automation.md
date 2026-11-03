@@ -337,6 +337,11 @@ Before the owner sets the variable, all of these must be true:
   offline, so an offline runner blocks required checks in every pilot
   repository.
 
+On a self-hosted runner the quality job runs a repository's `playwright
+install --with-deps` command without `--with-deps`: that flag always runs
+`sudo apt-get`, the job has no sudo, and the runner image already has
+Chromium's libraries (home-lab's runner setup). GitHub-hosted runs keep it.
+
 To undo, delete the variable. Every repository goes back to GitHub-hosted
 runners on the next run.
 

@@ -88,6 +88,27 @@ class DiscoveryTests(unittest.TestCase):
             self.assertTrue(notes)
 
 
+class RunnerTests(unittest.TestCase):
+    install = ["npm", "exec", "--no", "--", "playwright", "install", "--with-deps", "chromium"]
+
+    def test_self_hosted_drops_playwright_with_deps(self):
+        argv = module("quality").for_runner(self.install, {"RUNNER_ENVIRONMENT": "self-hosted"})
+        self.assertEqual(argv, ["npm", "exec", "--no", "--", "playwright", "install", "chromium"])
+
+    def test_hosted_keeps_with_deps(self):
+        for env in ({"RUNNER_ENVIRONMENT": "github-hosted"}, {}):
+            self.assertEqual(module("quality").for_runner(self.install, env), self.install)
+
+    def test_other_commands_untouched_on_self_hosted(self):
+        env = {"RUNNER_ENVIRONMENT": "self-hosted"}
+        for argv in (
+            ["npm", "exec", "--no", "--", "playwright", "test", "--workers=2"],
+            ["npm", "run", "setup", "--", "--with-deps"],
+            ["npx", "--with-deps", "playwright", "test"],
+        ):
+            self.assertEqual(module("quality").for_runner(argv, env), argv)
+
+
 class PolicyTests(unittest.TestCase):
     def test_critical_and_secrets_cannot_be_baselined(self):
         security = module("security")
