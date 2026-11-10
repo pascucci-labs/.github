@@ -66,12 +66,9 @@ jobs:
     uses: pascucci-labs/.github/.github/workflows/quality.yml@{ref}
     with:
       platform-ref: {ref}
-  security:
-    uses: pascucci-labs/.github/.github/workflows/security.yml@{ref}
-    with:
-      platform-ref: {ref}
-  dependencies:
-    uses: pascucci-labs/.github/.github/workflows/dependency-audit.yml@{ref}
+  # The security and dependency scans in one job that runs no repository code (scans.yml).
+  scans:
+    uses: pascucci-labs/.github/.github/workflows/scans.yml@{ref}
     with:
       platform-ref: {ref}
   performance:
@@ -141,7 +138,7 @@ def digest(plan):
 
 def discover(ref, names=None):
     # Confirm central commit and workflow files exist before proposing callers.
-    for workflow in ("quality", "security", "dependency-audit", "performance"):
+    for workflow in ("quality", "scans", "performance"):
         api(f"repos/{ORG}/.github/contents/.github/workflows/{workflow}.yml?ref={ref}")
     entries = []
     for repo in pages(f"orgs/{ORG}/repos"):

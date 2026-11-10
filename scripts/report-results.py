@@ -13,6 +13,20 @@ from common import load_script
 
 sync = load_script("sync-repositories")
 
+# Each result document is trusted only from the artifact of the job that produced it. The quality job runs the
+# repository's own commands, so its artifact could carry a forged security.json; the scan jobs run no repository code.
+TRUSTED_RESULT = {
+    "quality-results": "quality.json",
+    "security-results": "security.json",
+    "dependencies-results": "dependencies.json",
+    "performance-results": "performance.json",
+}
+
+
+def trusted_result(artifact_name, filename):
+    """True when ``filename`` (a path inside the artifact) is the one result its artifact may carry."""
+    return TRUSTED_RESULT.get(artifact_name) == filename.rsplit("/", 1)[-1]
+
 
 def collect(repo):
     row = {
@@ -70,12 +84,7 @@ def collect(repo):
         )["artifacts"]
         documents = {}
         for artifact in artifacts:
-            if artifact["expired"] or artifact["name"] not in {
-                "quality-results",
-                "security-results",
-                "dependencies-results",
-                "performance-results",
-            }:
+            if artifact["expired"] or artifact["name"] not in TRUSTED_RESULT:
                 continue
             if artifact["size_in_bytes"] > 10_000_000:
                 continue
@@ -84,16 +93,14 @@ def collect(repo):
             ).stdout
             with zipfile.ZipFile(io.BytesIO(blob)) as archive:
                 for item in archive.infolist():
-                    if item.file_size > 10_000_000 or item.filename.rsplit("/", 1)[-1] not in {
-                        "quality.json",
-                        "security.json",
-                        "dependencies.json",
-                        "performance.json",
-                    }:
+                    if item.file_size > 10_000_000 or not trusted_result(
+                        artifact["name"], item.filename
+                    ):
                         continue
                     data = json.loads(archive.read(item))
-                    if data.get("schema") == 1:
-                        documents[data["kind"]] = data
+                    kind = TRUSTED_RESULT[artifact["name"]].removesuffix(".json")
+                    if data.get("schema") == 1 and data.get("kind") == kind:
+                        documents[kind] = data
         row["results"] = documents
         row["dependency_update_prs"] = [
             {"title": p["title"], "url": p["html_url"]}
