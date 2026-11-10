@@ -8,14 +8,18 @@ Each adopting repository needs a reviewed caller pinned to a central commit.
 
 | Workflow | Purpose | Events in generated caller |
 |---|---|---|
-| checks.yml | The three below in one job (one runner slot per push): the scans first on the clean checkout, then the quality commands | PR, main push, weekly, manual |
-| quality.yml | Existing lint, compilation, formatting and tests | Callers not yet on checks.yml |
-| security.yml | Local Semgrep rules, Gitleaks commit/history, Trivy IaC | Callers not yet on checks.yml |
-| dependency-audit.yml | Trivy dependency vulnerabilities and OSV | Callers not yet on checks.yml |
+| quality.yml | Existing lint, compilation, formatting and tests | PR, main push, weekly, manual |
+| scans.yml | security.yml and dependency-audit.yml in one job that runs no repository code; each result uploaded under its own artifact | PR, main push, weekly, manual |
+| security.yml | Local Semgrep rules, Gitleaks commit/history, Trivy IaC | Callers not yet on scans.yml |
+| dependency-audit.yml | Trivy dependency vulnerabilities and OSV | Callers not yet on scans.yml |
 | performance.yml | Opt-in Lighthouse CI and k6 | Weekly or manual, default branch only |
 | repository-sync.yml | Read-only proposals and consolidated report | Private controller only |
 | codeql.yml | Optional public-repository CodeQL | Explicit caller only |
 | platform-validation.yml | Platform unit tests, actionlint, Semgrep validation | Central PR and main push |
+
+The quality job runs a repository's own commands, so it never shares a job with the scans: a repository command
+in the same VM could alter or forge scan results. `report-results.py` takes each result document only from the
+artifact of the job that produced it (`quality.json` from `quality-results`, and so on).
 
 Callers pass `platform-ref` equal to the full SHA in `uses`; that revision is
 checked out separately into `.quality-platform`. Scripts and shared security

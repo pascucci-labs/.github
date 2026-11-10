@@ -514,37 +514,49 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(report["manual"])
 
     def test_hidden_result_directory_is_explicitly_uploaded(self):
-        for name in ("checks", "quality", "security", "dependency-audit", "performance"):
+        for name in ("quality", "security", "dependency-audit", "performance"):
             text = (ROOT / ".github/workflows" / f"{name}.yml").read_text()
             self.assertIn("path: .quality-results/\n          include-hidden-files: true", text)
 
-    def test_checks_runs_all_three_and_scans_before_quality_commands(self):
-        text = (ROOT / ".github/workflows/checks.yml").read_text()
-        steps = [
-            "python .quality-platform/scripts/security.py --mode security",
-            "python .quality-platform/scripts/security.py --mode dependencies",
-            "python .quality-platform/scripts/quality.py",
-        ]
-        positions = [text.index(s) for s in steps]
-        self.assertEqual(positions, sorted(positions))
+    def test_scans_never_run_repository_code_and_upload_each_result(self):
+        text = (ROOT / ".github/workflows/scans.yml").read_text()
+        for repository_code in ("quality.py", "setup-node", "npm ", "uv sync", "pnpm", "install-tools.py actionlint"):
+            self.assertNotIn(repository_code, text)
+        security = text.index("security.py --mode security")
+        dependencies = text.index("security.py --mode dependencies")
+        security_upload = text.index("name: security-results")
+        dependencies_upload = text.index("name: dependencies-results")
+        self.assertLess(security, security_upload)
+        self.assertLess(security_upload, dependencies)
+        self.assertLess(dependencies, dependencies_upload)
+        self.assertIn("path: .quality-results/security.json\n          include-hidden-files: true", text)
+        self.assertIn("path: .quality-results/dependencies.json\n          include-hidden-files: true", text)
         self.assertIn("fetch-depth: 0", text)
         self.assertNotIn("continue-on-error", text)
-        for name in ("Scan dependencies", "Run repository quality commands"):
-            block = text.split(f"- name: {name}\n", 1)[1].split("\n", 1)[0]
-            self.assertEqual(block.strip(), "if: ${{ !cancelled() }}")
-        caller = module("sync-repositories").caller("a" * 40)
-        self.assertIn("/checks.yml@" + "a" * 40, caller)
-        self.assertNotIn("/quality.yml@", caller)
+        block = text.split("- name: Scan dependencies\n", 1)[1].split("\n", 1)[0]
+        self.assertEqual(block.strip(), "if: ${{ !cancelled() }}")
 
-    def test_persistent_quality_failure_ignores_a_failed_scan_in_checks(self):
+    def test_caller_keeps_quality_apart_from_the_scans(self):
+        caller = module("sync-repositories").caller("a" * 40)
+        self.assertIn("/quality.yml@" + "a" * 40, caller)
+        self.assertIn("/scans.yml@" + "a" * 40, caller)
+        self.assertNotIn("/security.yml@", caller)
+        self.assertNotIn("/dependency-audit.yml@", caller)
+        # quality.yml is the only shared workflow that runs repository commands, and it uploads only its own name.
+        quality = (ROOT / ".github/workflows/quality.yml").read_text()
+        self.assertIn("name: quality-results", quality)
+        self.assertNotIn("security-results", quality)
+
+    def test_report_trusts_each_result_only_from_its_own_artifact(self):
         report = module("report-results")
-        failed = {"conclusion": "failure", "name": "checks / check"}
-        step = lambda conclusion: {"name": "Run repository quality commands", "conclusion": conclusion}
-        self.assertTrue(report.quality_failed(failed | {"steps": [step("failure")]}))
-        self.assertFalse(report.quality_failed(failed | {"steps": [step("success")]}))
-        self.assertTrue(report.quality_failed({"conclusion": "failure", "name": "quality / check"}))
-        self.assertFalse(report.quality_failed({"conclusion": "failure", "name": "security / check"}))
-        self.assertFalse(report.quality_failed({"conclusion": "success", "name": "quality / check"}))
+        self.assertTrue(report.trusted_result("security-results", "security.json"))
+        self.assertTrue(report.trusted_result("quality-results", ".quality-results/quality.json"))
+        self.assertTrue(report.trusted_result("dependencies-results", "dependencies.json"))
+        # A forged scan result inside the quality job's artifact is ignored.
+        self.assertFalse(report.trusted_result("quality-results", "security.json"))
+        self.assertFalse(report.trusted_result("quality-results", "dependencies.json"))
+        self.assertFalse(report.trusted_result("security-results", "dependencies.json"))
+        self.assertFalse(report.trusted_result("other", "security.json"))
 
     def test_every_external_action_is_sha_pinned_and_no_unsafe_trigger(self):
         import re

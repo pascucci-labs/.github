@@ -62,9 +62,13 @@ concurrency:
   group: org-quality-${{{{ github.workflow }}}}-${{{{ github.ref }}}}
   cancel-in-progress: ${{{{ github.event_name == 'pull_request' }}}}
 jobs:
-  # quality, security and dependency checks in one job (checks.yml).
-  checks:
-    uses: pascucci-labs/.github/.github/workflows/checks.yml@{ref}
+  quality:
+    uses: pascucci-labs/.github/.github/workflows/quality.yml@{ref}
+    with:
+      platform-ref: {ref}
+  # The security and dependency scans in one job that runs no repository code (scans.yml).
+  scans:
+    uses: pascucci-labs/.github/.github/workflows/scans.yml@{ref}
     with:
       platform-ref: {ref}
   performance:
@@ -134,7 +138,7 @@ def digest(plan):
 
 def discover(ref, names=None):
     # Confirm central commit and workflow files exist before proposing callers.
-    for workflow in ("checks", "performance"):
+    for workflow in ("quality", "scans", "performance"):
         api(f"repos/{ORG}/.github/contents/.github/workflows/{workflow}.yml?ref={ref}")
     entries = []
     for repo in pages(f"orgs/{ORG}/repos"):
