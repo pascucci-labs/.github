@@ -8,9 +8,10 @@ Each adopting repository needs a reviewed caller pinned to a central commit.
 
 | Workflow | Purpose | Events in generated caller |
 |---|---|---|
-| quality.yml | Existing lint, compilation, formatting and tests | PR, main push, weekly, manual |
-| security.yml | Local Semgrep rules, Gitleaks commit/history, Trivy IaC | PR, main push, weekly, manual |
-| dependency-audit.yml | Trivy dependency vulnerabilities and OSV | PR, main push, weekly, manual |
+| checks.yml | The three below in one job (one runner slot per push): the scans first on the clean checkout, then the quality commands | PR, main push, weekly, manual |
+| quality.yml | Existing lint, compilation, formatting and tests | Callers not yet on checks.yml |
+| security.yml | Local Semgrep rules, Gitleaks commit/history, Trivy IaC | Callers not yet on checks.yml |
+| dependency-audit.yml | Trivy dependency vulnerabilities and OSV | Callers not yet on checks.yml |
 | performance.yml | Opt-in Lighthouse CI and k6 | Weekly or manual, default branch only |
 | repository-sync.yml | Read-only proposals and consolidated report | Private controller only |
 | codeql.yml | Optional public-repository CodeQL | Explicit caller only |

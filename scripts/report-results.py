@@ -14,6 +14,20 @@ from common import load_script
 sync = load_script("sync-repositories")
 
 
+def quality_failed(job):
+    """A failed quality job, or a combined checks job (checks.yml) whose quality step failed: a failed scan in the
+    combined job is not a quality failure."""
+    if job["conclusion"] != "failure":
+        return False
+    name = job["name"].lower()
+    if "quality /" in name:
+        return True
+    return "checks /" in name and any(
+        s["name"] == "Run repository quality commands" and s.get("conclusion") == "failure"
+        for s in job.get("steps", [])
+    )
+
+
 def collect(repo):
     row = {
         "repository": repo["full_name"],
@@ -110,10 +124,7 @@ def collect(repo):
                 for r in completed
             ]
             row["persistent_quality_failure"] = all(
-                any(
-                    "quality /" in j["name"].lower() and j["conclusion"] == "failure" for j in batch
-                )
-                for batch in jobs
+                any(quality_failed(j) for j in batch) for batch in jobs
             )
         findings = {
             f["id"]: f

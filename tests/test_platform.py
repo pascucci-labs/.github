@@ -514,9 +514,37 @@ class WorkflowTests(unittest.TestCase):
             self.assertTrue(report["manual"])
 
     def test_hidden_result_directory_is_explicitly_uploaded(self):
-        for name in ("quality", "security", "dependency-audit", "performance"):
+        for name in ("checks", "quality", "security", "dependency-audit", "performance"):
             text = (ROOT / ".github/workflows" / f"{name}.yml").read_text()
             self.assertIn("path: .quality-results/\n          include-hidden-files: true", text)
+
+    def test_checks_runs_all_three_and_scans_before_quality_commands(self):
+        text = (ROOT / ".github/workflows/checks.yml").read_text()
+        steps = [
+            "python .quality-platform/scripts/security.py --mode security",
+            "python .quality-platform/scripts/security.py --mode dependencies",
+            "python .quality-platform/scripts/quality.py",
+        ]
+        positions = [text.index(s) for s in steps]
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn("fetch-depth: 0", text)
+        self.assertNotIn("continue-on-error", text)
+        for name in ("Scan dependencies", "Run repository quality commands"):
+            block = text.split(f"- name: {name}\n", 1)[1].split("\n", 1)[0]
+            self.assertEqual(block.strip(), "if: ${{ !cancelled() }}")
+        caller = module("sync-repositories").caller("a" * 40)
+        self.assertIn("/checks.yml@" + "a" * 40, caller)
+        self.assertNotIn("/quality.yml@", caller)
+
+    def test_persistent_quality_failure_ignores_a_failed_scan_in_checks(self):
+        report = module("report-results")
+        failed = {"conclusion": "failure", "name": "checks / check"}
+        step = lambda conclusion: {"name": "Run repository quality commands", "conclusion": conclusion}
+        self.assertTrue(report.quality_failed(failed | {"steps": [step("failure")]}))
+        self.assertFalse(report.quality_failed(failed | {"steps": [step("success")]}))
+        self.assertTrue(report.quality_failed({"conclusion": "failure", "name": "quality / check"}))
+        self.assertFalse(report.quality_failed({"conclusion": "failure", "name": "security / check"}))
+        self.assertFalse(report.quality_failed({"conclusion": "success", "name": "quality / check"}))
 
     def test_every_external_action_is_sha_pinned_and_no_unsafe_trigger(self):
         import re
