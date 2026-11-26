@@ -50,7 +50,7 @@ explanations, give the numbers and sample sizes, have the work checked
 independently, make every step of the reasoning hold, report failures as
 plainly as wins, and count the failures, not just the survivors.
 
-AI agents help with code, reviews, research and drafts. Greg Pascucci is accountable for their work.
+AI agents help with code, reviews, research and drafts. Greg Pascucci is accountable for the studio’s work and makes its major decisions.
 
 ## Open source
 
