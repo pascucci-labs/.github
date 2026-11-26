@@ -1,11 +1,30 @@
 # Pascucci Labs
 
-> A small Canadian software studio, run by Greg Pascucci with the help of AI agents.
+We’re a software studio in Greater Victoria, British Columbia. We build websites for small businesses and web apps for work, learning and tabletop gaming. Sky helps clients shape their brands and reach customers. Greg builds software and teaches programming.
 
-We build and run websites and tools for tabletop gaming, small businesses and
-the public. Much of the work, from code and reviews to research and drafts,
-is done by AI agents. Greg Pascucci is accountable for all of it and decides
-anything that matters.
+[Visit Pascucci Labs](https://pascucci-labs.com/) · [Explore our portfolio](https://pascucci-labs.com/portfolio) · [Discuss a project](https://pascucci-labs.com/contact)
+
+## Practice demos
+
+| Demo | What you can try |
+| --- | --- |
+| [Accounting Services](https://accountingservices.pascucci.rocks/) | Follow a fictional client from an accounting question to an enquiry prepared for an accountant. |
+| [BC Legal AI](https://legalservices.pascucci.rocks/) | Explore a British Columbia legal research question and check the cited authorities against their sources. The demo is experimental and does not provide legal advice. |
+
+## What we run
+
+| Project | What you’ll find |
+| --- | --- |
+| [Host With Pascucci](https://pascucci.rocks/) | Website design, hosting and ongoing updates for small businesses. |
+| [Marketing with Sky](https://pascucci.rocks/smp) | Brand refreshes, website consulting and sales support with Sky Mandala Pascucci. |
+| [Code With Pascucci](https://pascucci.rocks/cwp/) | Personal programming lessons with Greg. |
+| [OpenRPG](https://openrpg.ca/) | Tabletop role-playing in Openheim, with world pages, maps and tools for game masters. |
+
+## Sites we host and look after
+
+- [Eat Something Pretty](https://eatsomethingpretty.ca/)
+- [Pretty Boutique](https://prettyboutique.ca/)
+- [Greg’s PC Fix](https://gregspcfix.ca/), computer repair in Langford, BC
 
 ## How we work
 
@@ -31,26 +50,8 @@ explanations, give the numbers and sample sizes, have the work checked
 independently, make every step of the reasoning hold, report failures as
 plainly as wins, and count the failures, not just the survivors.
 
-## What we run
-
-| | |
-|---|---|
-| **[OpenRPG](https://www.openrpg.ca)** | An open tabletop role-playing system set in the world of Openheim: rules, world pages, maps and tools for game masters. |
-| **[Host With Pascucci](https://pascucci.rocks)** | Simple websites and hosting for small businesses in Greater Victoria, BC. |
-| **[BC Legal AI](https://bclegalai.ca)** | A free research tool for questions about BC law. It is a tool, not legal advice. |
-| **Code with Pascucci** | Programming lessons from Greg. |
-
-## Sites we host and look after
-
-- [Eat Something Pretty](https://eatsomethingpretty.com)
-- [Pretty Boutique](https://prettyboutique.ca)
-- [Greg's PC Fix](https://gregspcfix.ca), computer repair in Langford, BC
+AI agents help with code, reviews, research and drafts. Greg Pascucci is accountable for the studio’s work and makes its major decisions.
 
 ## Open source
 
-- [bb-coop](https://github.com/pascucci-labs/bb-coop): a two-player online
-  co-op mod for Battle Brothers.
-
-Most of our repositories are private.
-
-<sub>Pascucci Labs · Langford, British Columbia, Canada</sub>
+Our earlier [bb-coop project](https://github.com/pascucci-labs-retired/bb-coop) is a two-player online co-op mod for Battle Brothers. Most of our current repositories are private.
