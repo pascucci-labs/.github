@@ -8,8 +8,8 @@ We’re a software studio in Greater Victoria, British Columbia. We build websit
 
 | Demo | What you can try |
 | --- | --- |
-| [Accounting Services](https://accountingservices.pascucci.rocks/) | Follow a fictional client from an accounting question to an enquiry prepared for an accountant. |
-| [BC Legal AI](https://legalservices.pascucci.rocks/) | Explore a British Columbia legal research question and check the cited authorities against their sources. The demo is experimental and does not provide legal advice. |
+| [Accounting Services](https://accountingservices.pascucci.rocks/) | Complete a fictional new-client or T1 tax-season questionnaire, encrypt a sample attachment, and open the submission in the demo staff inbox. |
+| [Legal Services](https://legalservices.pascucci.rocks/) | Try [case intake](https://legalservices.pascucci.rocks/?demo=case-intake) with a fictional tenancy or contract question and a sample file. Switch to the demo reviewer to inspect and decrypt the submission. |
 
 ## What we run
 
